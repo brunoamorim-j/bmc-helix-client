@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bmc-helix-client"
+version = "0.1.0"
+description = "A reusable Python client for the BMC Helix ITSM REST API"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.32.3"
+]
+
+[tool.setuptools.packages.find]
+include = ["bmc_helix_client*"]
