@@ -592,9 +592,15 @@ class HelixClient:
                     f"{ERROR_PREFIX}: Nenhum critério de busca válido foi fornecido."
                 )
 
-
-            query = self._build_query(criteria=processed_criteria)
-
+            query = self._build_query(
+                criteria=processed_criteria,
+                use_like=(
+                    summary_search == "like"
+                    and "Description" in processed_criteria
+                ),
+                like_field="Description"
+            )
+            
             if "'Status'" in query:
                 # open
                 if "open" in processed_criteria.get("Status", ""):
@@ -617,10 +623,6 @@ class HelixClient:
                         f"'Status' = \"{processed_criteria['Status']}\"",
                         f"'Status' = {mapped}"
                     )
-
-            if summary_search == "like":
-                query = query.replace("= \"", "LIKE \"%")
-                query = query.replace("\"", "%\"")
 
             return self._paginated_search(
                 endpoint=endpoint,

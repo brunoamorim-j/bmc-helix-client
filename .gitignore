@@ -16,5 +16,5 @@ venv/
 .vscode/
 .idea/
 
-#Internal test
-.internal_tests/
+# Internal test
+.internal/
