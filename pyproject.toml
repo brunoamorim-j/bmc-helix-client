@@ -12,5 +12,10 @@ dependencies = [
     "requests>=2.32.3"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0"
+]
+
 [tool.setuptools.packages.find]
 include = ["bmc_helix_client*"]

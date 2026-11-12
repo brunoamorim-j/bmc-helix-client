@@ -1,39 +1,74 @@
 
-import os
+import pytest
+from unittest.mock import Mock, patch
 
 from bmc_helix_client import HelixClient, HelixClientError
 
 
-def main():
-    base_url = os.getenv("HELIX_BASE_URL")
-    username = os.getenv("HELIX_USERNAME")
-    password = os.getenv("HELIX_PASSWORD")
+def test_authenticate_success():
+    client = HelixClient(
+        base_url="https://helix.example.com",
+        username="test_user",
+        password="test_password"
+    )
 
-    if not all([base_url, username, password]):
-        raise ValueError("Configure HELIX_BASE_URL, HELIX_USERNAME and HELIX_PASSWORD.")
+    # Simula a resposta da API
+    mock_response = Mock()
+    mock_response.text = "fake-jwt-token"
 
-    try:
-        client = HelixClient(
-            base_url=base_url,
-            username=username,
-            password=password,
-            verify_ssl=False
-        )
+    # Simula uma resposta HTTP sem erros
+    mock_response.raise_for_status.return_value = None
 
-        print("Client created successfully.")
+    with patch("bmc_helix_client.client.req.post") as mock_post:
+        mock_post.return_value = mock_response
 
         client.authenticate()
 
-        if not client.jwt_token:
-            raise HelixClientError("Authentication returned an empty token.")
+    assert client.jwt_token == "fake-jwt-token"
 
-        print("Authentication successful.")
-        print("JWT token received and stored internally.")
+    mock_post.assert_called_once_with(
+        "https://helix.example.com/api/jwt/login",
+        data={
+            "username": "test_user",
+            "password": "test_password"
+        },
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        timeout=60,
+        verify=True
+    )
 
-    except HelixClientError as error:
-        print(f"Helix error: {error}")
-        raise
+
+def test_authenticate_empty_token():
+    client = HelixClient(
+        base_url="https://helix.example.com",
+        username="test_user",
+        password="test_password"
+    )
+
+    mock_response = Mock()
+    mock_response.text = ""
+    mock_response.raise_for_status.return_value = None
+
+    with patch("bmc_helix_client.client.req.post") as mock_post:
+        mock_post.return_value = mock_response
+
+        with pytest.raises(HelixClientError):
+            client.authenticate()
 
 
-if __name__ == "__main__":
-    main()
+def test_authenticate_timeout():
+    from requests.exceptions import Timeout
+
+    client = HelixClient(
+        base_url="https://helix.example.com",
+        username="test_user",
+        password="test_password"
+    )
+
+    with patch("bmc_helix_client.client.req.post") as mock_post:
+        mock_post.side_effect = Timeout("Connection timed out")
+
+        with pytest.raises(HelixClientError):
+            client.authenticate()
