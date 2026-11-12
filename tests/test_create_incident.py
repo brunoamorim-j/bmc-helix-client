@@ -13,7 +13,6 @@ def main():
 
     try:
         client.authenticate()
-        print("Autenticação realizada com sucesso!")
 
         incident_data = {
             "values": {
@@ -37,11 +36,11 @@ def main():
 
         response = client.create_incident(incident_data)
 
-        print("Incidente criado com sucesso!")
-        print(f"Resposta: {response}")
+        print("Incident created successfully!")
+        print(f"Response: {response}")
 
     except HelixClientError as error:
-        print(f"Erro ao criar incidente: {error}")
+        print(f"Helix error: {error}")
 
 
 if __name__ == "__main__":
