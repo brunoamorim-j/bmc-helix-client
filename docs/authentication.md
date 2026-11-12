@@ -1,3 +1,5 @@
+
+
 # Authentication
 
 BMC Helix Client uses JWT (JSON Web Token) authentication to communicate with the BMC Helix ITSM REST API.
@@ -8,11 +10,12 @@ Import `HelixClient` and provide your Helix instance URL and credentials.
 
 ```python
 from bmc_helix_client import HelixClient
+import os
 
 client = HelixClient(
-    base_url="https://your-helix-instance",
-    username="your_username",
-    password="your_password"
+    base_url=os.getenv("HELIX_BASE_URL"),
+    username=os.getenv("HELIX_USERNAME"),
+    password=os.getenv("HELIX_PASSWORD")
 )
 ```
 
@@ -34,7 +37,7 @@ Call `authenticate()` to obtain a JWT token.
 client.authenticate()
 ```
 
-The client stores the token internally and uses it to authenticate subsequent API requests.
+The client stores the JWT token internally and uses it to authenticate subsequent API requests.
 
 Authentication must be performed before calling methods that interact with the Helix API.
 
@@ -42,11 +45,12 @@ Authentication must be performed before calling methods that interact with the H
 
 ```python
 from bmc_helix_client import HelixClient
+import os
 
 client = HelixClient(
-    base_url="https://your-helix-instance",
-    username="your_username",
-    password="your_password"
+    base_url=os.getenv("HELIX_BASE_URL"),
+    username=os.getenv("HELIX_USERNAME"),
+    password=os.getenv("HELIX_PASSWORD")
 )
 
 client.authenticate()
@@ -78,7 +82,6 @@ client = HelixClient(
 **Security warning:** Disabling SSL certificate verification is not recommended for production environments because it removes protection against certificate impersonation.
 
 For production environments, configure your system to trust the appropriate certificate authority and keep `verify_ssl=True`.
-
 
 ## Security Recommendations
 

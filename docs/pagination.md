@@ -1,3 +1,5 @@
+
+
 # Pagination
 
 This document describes how pagination is handled internally by the `HelixClient`.
@@ -27,14 +29,14 @@ The client automatically retrieves subsequent pages until there are no more reco
 
 ## Automatic Pagination
 
-All public search methods use the internal pagination mechanism.
+Public search methods use the internal pagination mechanism.
 
 For example:
 
 ```python
 cis = client.search_ci(
     search_criteria={
-        "Name": "SRV"
+        "Name": "EXAMPLE"
     }
 )
 ```
@@ -43,14 +45,15 @@ Even if the search returns more than 500 records, the client automatically reque
 
 ## Maximum Number of Records
 
-The `max_records` parameter can limit the total number of records returned by the internal pagination method.
+The `max_records` parameter can limit the total number of records returned by supported search methods.
 
 For example:
 
 ```python
-records = client._paginated_search(
-    endpoint="/api/arsys/v1/entry/AST:ComputerSystem",
-    base_query=None,
+incidents = client.search_incident(
+    search_criteria={
+        "Status": "open"
+    },
     limit=500,
     max_records=1000
 )

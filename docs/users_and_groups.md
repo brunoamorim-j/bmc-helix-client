@@ -93,7 +93,7 @@ Partial matching:
 ```python
 groups = client.search_support_groups(
     search_criteria={
-        "Support Group Name": "Monitoração"
+        "Support Group Name": "Example"
     },
     use_like=True
 )
@@ -172,4 +172,3 @@ try:
 except HelixClientError as error:
     print(f"User search failed: {error}")
 ```
-

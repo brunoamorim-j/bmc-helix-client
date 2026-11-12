@@ -1,3 +1,5 @@
+
+
 # Configuration Items
 
 This document describes how to search for Configuration Items (CIs) using the `HelixClient`.

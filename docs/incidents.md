@@ -1,24 +1,12 @@
-# Incident Management
 
-This document describes the incident-related operations available in `HelixClient`.
 
-All operations require authentication before execution:
+# Incidents
 
-```python
-from bmc_helix_client import HelixClient
-
-client = HelixClient(
-    base_url="https://your-helix-instance",
-    username="your_username",
-    password="your_password"
-)
-
-client.authenticate()
-```
+This document describes the incident-related operations available in `bmc_helix_client`.
 
 ## 1. Search Incidents
 
-Use `search_incident()` to retrieve incidents using one or more search criteria.
+Use `search_incident()` to search incidents using one or more supported fields.
 
 ### Method
 
@@ -37,16 +25,59 @@ search_incident(
 
 | Parameter | Description |
 |---|---|
-| `search_criteria` | Dictionary containing search fields and values. Required. |
-| `summary_search` | Search operator for the Description field: `equal` or `like`. |
-| `fields` | List of fields to return. If omitted, all available fields are requested. |
-| `limit` | Maximum number of records per page. |
-| `sleep_between_pages` | Delay between paginated requests, in seconds. |
-| `max_records` | Maximum number of records to return. `None` means no explicit limit. |
+| `search_criteria` | Dictionary containing the search fields and their values. At least one valid criterion is required. |
+| `summary_search` | Matching operator for the `Description` field only. Supports `equal` (exact match) and `like` (partial match). Other search fields are not affected. |
+| `fields` | List of fields to return. If omitted, all fields are returned. |
+| `limit` | Maximum number of records retrieved per API request. Default: `500`. |
+| `sleep_between_pages` | Delay in seconds between pagination requests. Default: `0.1`. |
+| `max_records` | Maximum total number of records to retrieve. If omitted, pagination continues until all available records are retrieved. |
+
+### Example — Exact Match
+
+```python
+incidents = client.search_incident(
+    search_criteria={
+        "Assigned Group": "Example Support Group",
+        "Status": "open",
+        "Description": "Database connection failed"
+    }
+)
+```
+
+### Example — Partial Match
+
+```python
+incidents = client.search_incident(
+    search_criteria={
+        "Description": "database connection"
+    },
+    summary_search="like"
+)
+```
+
+### Example — Multiple Criteria
+
+```python
+incidents = client.search_incident(
+    search_criteria={
+        "Assigned Group": "Example Support Group",
+        "Status": "open",
+        "Description": "database"
+    },
+    summary_search="like",
+    fields=[
+        "Incident Number",
+        "Description",
+        "Status",
+        "Assigned Group"
+    ],
+    max_records=100
+)
+```
 
 ### Supported Search Fields
 
-The following fields are supported:
+The following fields are supported by `search_incident()`:
 
 - `First_Name`
 - `Last_Name`
@@ -69,158 +100,92 @@ The following fields are supported:
 
 ### Status Values
 
-The `Status` field supports the following values:
+The `Status` field accepts the following values:
 
 | Value | Behavior |
 |---|---|
-| `open` | Returns incidents with status below 4. |
-| `completed` | Returns incidents with status above 3. |
-| `new` | Status 0 |
-| `assigned` | Status 1 |
-| `in_progress` | Status 2 |
-| `pending` | Status 3 |
-| `resolved` | Status 4 |
-| `closed` | Status 5 |
-| `cancelled` | Status 6 |
+| `open` | Returns incidents with status values below `4`. |
+| `completed` | Returns incidents with status values above `3`. |
+| `new` | Maps to status value `0`. |
+| `assigned` | Maps to status value `1`. |
+| `in_progress` | Maps to status value `2`. |
+| `pending` | Maps to status value `3`. |
+| `resolved` | Maps to status value `4`. |
+| `closed` | Maps to status value `5`. |
+| `cancelled` | Maps to status value `6`. |
 
-### Examples
-
-Search by incident number:
-
-```python
-incidents = client.search_incident(
-    search_criteria={
-        "Incident Number": "EXAMPLE-INCIDENT-ID"
-    }
-)
-
-print(incidents)
-```
-
-Search open incidents:
-
-```python
-incidents = client.search_incident(
-    search_criteria={
-        "Status": "open"
-    },
-    fields=[
-        "Incident Number",
-        "Description",
-        "Status",
-        "Assigned Group"
-    ]
-)
-```
-
-Search using partial description:
-
-```python
-incidents = client.search_incident(
-    search_criteria={
-        "Description": "database connection"
-    },
-    summary_search="like"
-)
-```
-
-Limit the number of returned records:
-
-```python
-incidents = client.search_incident(
-    search_criteria={
-        "Status": "completed"
-    },
-    limit=100,
-    max_records=250
-)
-```
-
-**Important:**
+### Important
 
 - Search criteria are combined using the `AND` operator.
 - At least one valid search criterion must be provided.
-- The `like` operator applies to the `Description` field.
-- Results are retrieved using automatic pagination.
+- By default, search criteria use equality matching (`=`), except for the special `Status` values described above.
+- The `summary_search` parameter applies exclusively to the `Description` field.
+- When `summary_search="like"` is used, partial matching is applied to `Description` using wildcards on both sides (`%value%`).
+- Other fields are not affected by `summary_search` and retain their default matching behavior.
+- If `Description` is not included in `search_criteria`, `summary_search` has no effect.
+- Results are retrieved using automatic pagination with `limit` and `offset`.
+- Results are sorted by `Incident Number` in ascending order.
+- Duplicate incidents are removed using `Incident Number`.
+- `max_records` limits the total number of records retrieved across pagination requests.
+
+---
 
 ## 2. Create Incidents
 
-Use `create_incident()` to create a new incident through the `HPD:IncidentInterface_Create` form.
+Use `create_incident()` to create a new incident.
 
 ### Method
 
 ```python
-create_incident(
-    incident_data,
-    fields=None
-)
+create_incident(incident_data, fields=None)
 ```
 
 ### Parameters
 
 | Parameter | Description |
 |---|---|
-| `incident_data` | Dictionary containing the incident payload according to the Helix API schema. |
-| `fields` | List of fields to return after creation. If omitted, only `Incident Number` is returned. Use `["*"]` to request all available fields. |
+| `incident_data` | Dictionary containing the incident data to be submitted. |
+| `fields` | List of fields to return. If omitted, only `Incident Number` is returned. |
 
-### Example – Minimal Incident Creation
-
-The following example demonstrates a minimal payload for creating an incident:
+### Example
 
 ```python
 incident_data = {
     "values": {
-        "Description": "CPU utilization above threshold",
-        "Impact": "3-Moderate/Limited",
-        "Urgency": "3-Medium",
-        "Reported Source": "Other"
+        "Description": "Database connection failed",
+        "Detailed Description": "The application cannot connect to the database.",
+        "Impact": "1-Extensive/Widespread",
+        "Urgency": "1-Critical",
+        "Reported Source": "Other",
+        "Service Type": "User Service Restoration",
+        "Assigned Group": "Example Support Group"
     }
 }
 
-created_incident = client.create_incident(
-    incident_data=incident_data
-)
+incident = client.create_incident(incident_data)
 
-print(f"Incident created: {created_incident['Incident Number']}")
+print(incident["Incident Number"])
 ```
 
-**Note:** The example represents a minimal payload for the library. Additional mandatory fields may depend on your BMC Helix configuration, incident templates, and business rules.
+### Returning All Fields
 
-### Requesting Additional Fields
-
-By default, the method returns only the incident number.
-
-You can request additional fields:
+Use `fields=["*"]` to request all available fields in the response.
 
 ```python
-created_incident = client.create_incident(
-    incident_data=incident_data,
-    fields=[
-        "Incident Number",
-        "Description",
-        "Impact",
-        "Urgency"
-    ]
-)
-
-print(created_incident)
-```
-
-To request all available fields:
-
-```python
-created_incident = client.create_incident(
-    incident_data=incident_data,
+incident = client.create_incident(
+    incident_data,
     fields=["*"]
 )
 ```
 
-**Important:**
+### Important
 
-- The method sends the provided payload directly to the Helix API.
-- It does not automatically apply templates or business rules.
-- Required fields and accepted values depend on your Helix configuration.
-- The method returns a dictionary containing the fields requested from the API.
+- The incident payload is submitted directly to the Helix API.
+- Required fields and accepted values depend on the configuration of the Helix instance.
+- This method does not apply templates or business rules. Those responsibilities belong to the application using the library.
+- The default response contains the `Incident Number`.
+
+---
 
 ## 3. Search Incident Worklogs
 
@@ -229,73 +194,57 @@ Use `search_incident_worklog()` to retrieve worklogs associated with a specific 
 ### Method
 
 ```python
-search_incident_worklog(
-    incident_number,
-    fields=None
-)
+search_incident_worklog(incident_number, fields=None)
 ```
 
 ### Parameters
 
 | Parameter | Description |
 |---|---|
-| `incident_number` | Incident number. Required. |
-| `fields` | List of fields to return. If omitted, only Submit Date is requested. |
+| `incident_number` | Incident number used to filter the worklogs. |
+| `fields` | List of fields to return. If omitted, only `Submit Date` is returned. |
 
-### Examples
-
-Search worklogs for an incident:
-
-```python
-worklogs = client.search_incident_worklog(
-    incident_number="EXAMPLE-INCIDENT-ID"
-)
-
-print(worklogs)
-```
-
-Request specific fields:
+### Example
 
 ```python
 worklogs = client.search_incident_worklog(
     incident_number="EXAMPLE-INCIDENT-ID",
     fields=[
-        "3",
-        "1000000161",
+        "Work Log ID",
+        "Submit Date",
         "Description",
-        "Work Log ID"
+        "Detailed Description"
     ]
 )
 
-print(worklogs)
+for worklog in worklogs:
+    print(worklog)
 ```
 
-**Important:**
+### Important
 
-- The search always filters by incident number.
-- The incident number must be a valid string.
+- Worklogs are filtered using an exact match on `Incident Number`.
 - Results are retrieved using automatic pagination.
-- If no fields are specified, only the Submit Date field is requested.
+- If `fields` is omitted, only `Submit Date` is requested.
+
+---
 
 ## 4. Create Incident Worklogs
 
-Use `create_incident_worklog()` to add a worklog to an existing incident.
+Use `create_incident_worklog()` to add a worklog to an incident.
 
 ### Method
 
 ```python
-create_incident_worklog(
-    worklog_data,
-    fields=None
-)
+create_incident_worklog(worklog_data, fields=None)
 ```
 
 ### Parameters
 
 | Parameter | Description |
 |---|---|
-| `worklog_data` | Dictionary containing a `values` object with the worklog fields. |
-| `fields` | List of fields to return. If omitted, only Work Log ID is returned. Use `["*"]` to request all available fields. |
+| `worklog_data` | Dictionary containing the worklog data. The payload must include a `values` dictionary. |
+| `fields` | List of fields to return. If omitted, only `Work Log ID` is returned. |
 
 ### Example
 
@@ -303,43 +252,36 @@ create_incident_worklog(
 worklog_data = {
     "values": {
         "Incident Number": "EXAMPLE-INCIDENT-ID",
-        "Description": "Investigation started.",
-        "Work Log Type": "General Information",
-        "View Access": "Internal"
+        "Description": "Incident investigation",
+        "Detailed Description": "Initial investigation has been completed."
     }
 }
 
-created_worklog = client.create_incident_worklog(
-    worklog_data=worklog_data
-)
+worklog = client.create_incident_worklog(worklog_data)
 
-print(created_worklog)
+print(worklog["Work Log ID"])
 ```
 
-Request additional fields:
+### Returning All Fields
 
 ```python
-created_worklog = client.create_incident_worklog(
-    worklog_data=worklog_data,
-    fields=[
-        "Work Log ID",
-        "Incident Number",
-        "Description"
-    ]
+worklog = client.create_incident_worklog(
+    worklog_data,
+    fields=["*"]
 )
-
-print(created_worklog)
 ```
 
-**Important:**
+### Important
 
-- `worklog_data` must be a dictionary containing a `values` dictionary.
-- Required fields and accepted values depend on your Helix configuration.
-- The method returns the fields requested from the API.
+- The payload must contain a `values` dictionary.
+- Required fields and accepted values depend on the Helix instance configuration.
+- The default response contains the `Work Log ID`.
+
+---
 
 ## 5. Associate a Configuration Item with an Incident
 
-Use `associate_ci_to_incident()` to associate an existing Configuration Item (CI) with an incident.
+Use `associate_ci_to_incident()` to create an association between a configuration item (CI) and an incident.
 
 ### Method
 
@@ -355,49 +297,55 @@ associate_ci_to_incident(
 
 | Parameter | Description |
 |---|---|
-| `incident_number` | Incident number. |
-| `ci_name` | Configuration Item name. |
-| `ci_recon_id` | CI Reconciliation Identity. |
-
-All parameters are required.
+| `incident_number` | Incident number to associate with the CI. |
+| `ci_name` | Name of the configuration item. |
+| `ci_recon_id` | Reconciliation Identity of the configuration item. |
 
 ### Example
 
 ```python
-success = client.associate_ci_to_incident(
+result = client.associate_ci_to_incident(
     incident_number="EXAMPLE-INCIDENT-ID",
     ci_name="EXAMPLE-SERVER",
-    ci_recon_id="RECONCILIATION_ID"
+    ci_recon_id="EXAMPLE-RECONCILIATION-ID"
 )
 
-print(success)
+print(result)
 ```
 
-The association is created with the following properties:
+### Important
 
-| Field | Value |
-|---|---|
-| CI Form | `AST:ComputerSystem` |
-| Incident Form | `HPD:Help Desk` |
-| Request Type | `Configuration Item` |
-| Association Type | `Related to` |
-| Status | `Enabled` |
+- Creates an association record linking a configuration item to an incident through the Helix API.
+- The association uses the `Related to` association type.
+- The association status is set to `Enabled`.
+- The method does not perform a prior search to verify the existence of the CI or incident.
+- The CI must be identified using its Reconciliation Identity.
 
-The method returns `True` when the association is successfully created. API or validation failures raise `HelixClientError`.
+---
 
 ## 6. Error Handling
 
-All incident-related operations may raise `HelixClientError` when validation, authentication, communication, or API processing fails.
+All operations require authentication before execution.
 
-Example:
+The library raises `HelixClientError` when an operation fails, including authentication errors, invalid parameters, and API request failures.
+
+### Example
 
 ```python
-from bmc_helix_client import HelixClientError
+from bmc_helix_client import HelixClient, HelixClientError
 
 try:
+    client = HelixClient(
+        base_url="https://helix.example.com",
+        username="your_username",
+        password="your_password"
+    )
+
+    client.authenticate()
+
     incidents = client.search_incident(
         search_criteria={
-            "Incident Number": "EXAMPLE-INCIDENT-ID"
+            "Status": "open"
         }
     )
 
@@ -405,16 +353,13 @@ except HelixClientError as error:
     print(f"Helix operation failed: {error}")
 ```
 
-## Notes
+---
 
-`HelixClient` provides direct access to the incident-related operations exposed by the BMC Helix REST API.
+## 7. Notes
 
-It does not implement application-specific workflows such as:
-
-- Automatic incident deduplication.
-- Template selection.
-- Business-hours rules.
-- Zabbix event processing.
-- Automatic incident updates based on monitoring events.
-
-These behaviors should be implemented by applications using the library, according to their own business requirements.
+- Call `authenticate()` before using incident-related methods.
+- Search methods return a list of dictionaries.
+- Create methods return a dictionary containing the requested response fields.
+- Use `fields=["*"]` when the complete API response is required.
+- Pagination is handled internally by the library for supported search operations.
+- The library provides API communication and does not implement application-specific incident management workflows.

@@ -759,7 +759,6 @@ class HelixClient:
 
         Args:
             incident_number: Helix incident number.
-                Example: "EXAMPLE-INCIDENT-ID".
             fields: List of fields to return. If None, only `Submit Date` is requested.
 
         Returns:

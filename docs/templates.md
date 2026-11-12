@@ -1,3 +1,5 @@
+
+
 # Incident Templates
 
 This document describes how to search for incident templates using the `HelixClient`.
@@ -29,7 +31,7 @@ Search for a template by its exact name:
 ```python
 templates = client.search_template(
     search_criteria={
-        "Template Name": "Server CPU Alert"
+        "Template Name": "Example Incident Template"
     }
 )
 
@@ -44,7 +46,7 @@ Set `use_like=True` to search for templates whose names contain the specified te
 ```python
 templates = client.search_template(
     search_criteria={
-        "Template Name": "Server"
+        "Template Name": "Example"
     },
     use_like=True
 )
@@ -57,7 +59,7 @@ You can specify which fields should be returned:
 ```python
 templates = client.search_template(
     search_criteria={
-        "Template Name": "Server CPU Alert"
+        "Template Name": "Example Incident Template"
     },
     fields=[
         "Template Name",
@@ -98,7 +100,7 @@ from bmc_helix_client import HelixClientError
 try:
     templates = client.search_template(
         search_criteria={
-            "Template Name": "Server CPU Alert"
+            "Template Name": "Example Incident Template"
         }
     )
 

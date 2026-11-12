@@ -16,7 +16,7 @@ def main():
         client.authenticate()
 
         results = client.search_ci(
-            search_criteria={"Name": "EXAMPLE-SERVER"}
+            search_criteria={"Name": "SERVER_NAME"}
         )
 
         print("Authenticated request successful.")
