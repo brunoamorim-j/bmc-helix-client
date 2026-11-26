@@ -4,6 +4,16 @@ A reusable Python client for interacting with the **BMC Helix ITSM REST API**.
 
 The goal of this project is to provide a simple and reusable interface for developers who need to integrate Python applications with BMC Helix ITSM.
 
+## Project Status and Contributions
+
+This project is part of my learning journey with Python and the BMC Helix ITSM API. I am still growing as a developer, and the project is continuously evolving. Some features, tests, and documentation may be incomplete or subject to change.
+
+The project is shared openly to exchange knowledge and help other developers working with BMC Helix ITSM.
+
+**Contributions are welcome!** Suggestions, feedback, bug reports, and improvements are always appreciated. I am open to learning from the community and improving the project along the way.
+
+Thank you for your interest and support!
+
 ## Features
 
 - JWT authentication.
